@@ -22,30 +22,41 @@ export default function BriefGenerationPage() {
         throw new Error('Missing NEXT_PUBLIC_AI_API_URL');
       }
 
+      const requestBody = {
+        primary_handle: primaryHandle.replace('@', '').trim(),
+        secondary_handle: secondaryHandle.replace('@', '').trim(),
+        campaign_type: 'cross_marketing',
+      };
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_AI_API_URL}/api/generate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            primary_handle: primaryHandle.replace('@', '').trim(),
-            secondary_handle: secondaryHandle.replace('@', '').trim(),
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
       if (!res.ok) {
+        const errorText = await res.text();
+        console.error('POST /api/generate failed', {
+          status: res.status,
+          statusText: res.statusText,
+          requestBody,
+          responseBody: errorText,
+        });
         throw new Error(`Server error: ${res.status}`);
       }
 
-      const { brief_id } = await res.json();
-      if (!brief_id) {
-        throw new Error('Missing brief_id in response');
+      const { task_id } = await res.json();
+      if (!task_id) {
+        throw new Error('Missing task_id in response');
       }
 
       redirected = true;
-      router.push(`/brief/${brief_id}`);
-    } catch {
+      router.push(`/brief/${task_id}`);
+    } catch (err) {
+      console.error('Generate request crashed', err);
       setError('Our AI agents are currently resting. Please try again later.');
     } finally {
       if (!redirected) {
