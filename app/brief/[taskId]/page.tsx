@@ -56,7 +56,7 @@ type StatusResponse = {
   error_message?: string | null;
 };
 
-type BriefSourceType = 'normies' | 'hype' | 'ragebyte' | 'custom';
+type BriefSourceType = 'relatable' | 'viral' | 'bold' | 'custom';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   queued: 'Task queued. Preparing your brief pipeline...',
@@ -70,12 +70,12 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 const POLLING_INTERVAL_MS = 3000;
 
 const BRIEF_TYPE_LABELS: Record<string, string> = {
-  normies: 'Normies',
-  hype: 'Hype',
-  ragebyte: 'Ragebyte',
+  relatable: 'Relatable',
+  viral: 'Viral',
+  bold: 'Bold',
 };
 
-const INDEX_FALLBACK_TYPES: BriefSourceType[] = ['normies', 'hype', 'ragebyte'];
+const INDEX_FALLBACK_TYPES: BriefSourceType[] = ['relatable', 'viral', 'bold'];
 
 function getBriefTypeKey(brief: BriefCard, index: number): BriefSourceType {
   if (brief.brief_type && brief.brief_type in BRIEF_TYPE_LABELS) {
@@ -83,7 +83,7 @@ function getBriefTypeKey(brief: BriefCard, index: number): BriefSourceType {
   }
   const titleLower = (brief.title ?? '').toLowerCase();
   if (titleLower in BRIEF_TYPE_LABELS) return titleLower as BriefSourceType;
-  return INDEX_FALLBACK_TYPES[index] ?? 'normies';
+  return INDEX_FALLBACK_TYPES[index] ?? 'relatable';
 }
 
 function getBriefLabel(brief: BriefCard, index: number): string {
@@ -262,7 +262,7 @@ export default function TaskBriefPage() {
               />
             </div>
             <p className="mt-3 text-xs text-[#8C8880]">
-              {isPolling ? 'Updating every 3 seconds.' : 'Polling stopped.'}
+              Generation usually takes 10–60 seconds.
             </p>
           </div>
         )}

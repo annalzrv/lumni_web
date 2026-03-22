@@ -319,7 +319,7 @@ export default function BriefGenerationPage() {
                 Thinking…
               </>
             ) : (
-              'Generate Magic ✦'
+              'Generate Brief'
             )}
           </button>
         </form>
