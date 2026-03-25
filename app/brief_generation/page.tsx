@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { getApiBaseUrl } from '@/lib/apiBaseUrl';
+
 type EntityType = 'brand' | 'creator' | 'unknown';
 
 type EntitySearchItem = {
@@ -45,7 +47,7 @@ export default function BriefGenerationPage() {
   }, []);
 
   async function fetchEntitySearch(kind: InputKind, value: string) {
-    if (!process.env.NEXT_PUBLIC_AI_API_URL) return;
+    if (!getApiBaseUrl()) return;
 
     const normalized = value.replace('@', '').trim();
     const requestVersion = ++requestVersionRef.current[kind];
@@ -66,7 +68,7 @@ export default function BriefGenerationPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_AI_API_URL}/api/entities/search?q=${encodeURIComponent(normalized)}`,
+        `${getApiBaseUrl()}/api/entities/search?q=${encodeURIComponent(normalized)}`,
         { method: 'GET' }
       );
 
@@ -143,7 +145,7 @@ export default function BriefGenerationPage() {
     let redirected = false;
 
     try {
-      if (!process.env.NEXT_PUBLIC_AI_API_URL) {
+      if (!getApiBaseUrl()) {
         throw new Error('Missing NEXT_PUBLIC_AI_API_URL');
       }
 
@@ -154,7 +156,7 @@ export default function BriefGenerationPage() {
       };
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_AI_API_URL}/api/generate`,
+        `${getApiBaseUrl()}/api/generate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -186,7 +188,7 @@ export default function BriefGenerationPage() {
       const isDev = process.env.NODE_ENV === 'development';
       setError(
         isDev
-          ? `Could not reach the API (${technical}). Use http://localhost:3000 (not the Network IP) if you see CORS/Failed to fetch; ensure the backend runs with a valid .env (Supabase).`
+          ? `Could not reach the API (${technical}). Check: backend running (curl http://127.0.0.1:8000/health). In .env.local use NEXT_PUBLIC_AI_API_URL=http://127.0.0.1:8000 if "Failed to fetch" persists. Next.js on :3001 is fine; CORS allows localhost:3000–3002.`
           : 'Our AI agents are currently resting. Please try again later.'
       );
     } finally {

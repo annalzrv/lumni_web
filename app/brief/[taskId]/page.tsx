@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { getApiBaseUrl } from '@/lib/apiBaseUrl';
+
 type TaskStatus =
   | 'queued'
   | 'scraping_data'
@@ -145,7 +147,7 @@ export default function TaskBriefPage() {
   const fetchStatus = useCallback(async () => {
     if (!taskId) return;
 
-    if (!process.env.NEXT_PUBLIC_AI_API_URL) {
+    if (!getApiBaseUrl()) {
       setStatus('failed');
       setErrorMessage('Missing NEXT_PUBLIC_AI_API_URL.');
       stopPolling();
@@ -155,7 +157,7 @@ export default function TaskBriefPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_AI_API_URL}/api/status/${taskId}`,
+        `${getApiBaseUrl()}/api/status/${taskId}`,
         { method: 'GET', headers: { 'Content-Type': 'application/json' }, cache: 'no-store' }
       );
 
@@ -206,7 +208,7 @@ export default function TaskBriefPage() {
   }, [startPolling]);
 
   async function handleSelectBrief(sourceType: BriefSourceType) {
-    if (!result?.brief_id || !process.env.NEXT_PUBLIC_AI_API_URL) return;
+    if (!result?.brief_id || !getApiBaseUrl()) return;
     if (sourceType === 'custom' && !customBrief.trim()) return;
 
     setIsSelecting(true);
@@ -217,7 +219,7 @@ export default function TaskBriefPage() {
       }
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_AI_API_URL}/api/briefs/${result.brief_id}/select`,
+        `${getApiBaseUrl()}/api/briefs/${result.brief_id}/select`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
