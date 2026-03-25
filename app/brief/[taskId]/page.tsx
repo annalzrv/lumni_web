@@ -60,16 +60,44 @@ type StatusResponse = {
 
 type BriefSourceType = 'relatable' | 'viral' | 'bold' | 'custom';
 
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  queued: 'Task queued. Preparing your brief pipeline...',
-  scraping_data: 'Collecting and structuring source data...',
-  analyzing_dna: 'Analyzing brand DNA and audience fit...',
-  generating_briefs: 'Generating polished creative options...',
-  completed: 'Completed.',
-  failed: 'Failed.',
-};
-
 const POLLING_INTERVAL_MS = 3000;
+
+const LOADING_STEPS: {
+  status: TaskStatus;
+  label: string;
+  heading: string;
+  subtitle: string;
+  hint?: string;
+}[] = [
+  {
+    status: 'queued',
+    label: 'Queue',
+    heading: 'Getting your request ready.',
+    subtitle: 'Just a moment while we set things up.',
+  },
+  {
+    status: 'scraping_data',
+    label: 'Profiles',
+    heading: 'Agents are analyzing profiles.',
+    subtitle: 'Looking at recent posts.',
+    hint: 'This may take up to 30 seconds.',
+  },
+  {
+    status: 'analyzing_dna',
+    label: 'Fit',
+    heading: 'Analyzing the fit.',
+    subtitle: 'Looking at audience overlap, content tone, and what has worked for them before.',
+  },
+  {
+    status: 'generating_briefs',
+    label: 'Briefs',
+    heading: 'Writing the briefs.',
+    subtitle: 'Generating three distinct creative directions based on both profiles.',
+    hint: 'This is the longest part — usually 30–50 seconds.',
+  },
+];
+
+const LOADING_STEP_ORDER: TaskStatus[] = ['queued', 'scraping_data', 'analyzing_dna', 'generating_briefs'];
 
 const BRIEF_TYPE_LABELS: Record<string, string> = {
   relatable: 'Relatable',
@@ -93,29 +121,97 @@ function getBriefLabel(brief: BriefCard, index: number): string {
   return BRIEF_TYPE_LABELS[key] ?? key;
 }
 
-/** Skeleton “paragraph” lines with staggered opacity wave (line-by-line feel). */
-const BRIEF_LOADING_LINE_WIDTHS = [
-  'w-full',
-  'w-[96%]',
-  'w-full',
-  'w-[88%]',
-  'w-full',
-  'w-[72%]',
-  'w-[44%]',
-] as const;
+function BriefLoadingScreen({
+  status,
+  progress,
+  isInitialLoading,
+}: {
+  status: TaskStatus;
+  progress: number;
+  isInitialLoading: boolean;
+}) {
+  const rawIndex = LOADING_STEP_ORDER.indexOf(status);
+  const stepIndex = rawIndex === -1 ? 0 : rawIndex;
 
-function BriefLoadingLineSkeleton() {
   return (
-    <div className="mt-5 space-y-3" aria-hidden>
-      {BRIEF_LOADING_LINE_WIDTHS.map((widthClass, i) => (
+    <div
+      className="flex flex-col px-6 py-12 w-full max-w-sm"
+      role="status"
+      aria-live="polite"
+      aria-busy
+    >
+      <p className="text-xs font-semibold tracking-widest uppercase text-[#E8431A] mb-8">
+        {isInitialLoading ? 'Connecting…' : 'Generating'}
+      </p>
+
+      {/* Vertical stepper */}
+      <div className="flex flex-col">
+        {LOADING_STEPS.map((s, i) => {
+          const isDone = i < stepIndex;
+          const isActive = i === stepIndex;
+          const isPending = i > stepIndex;
+          const isLast = i === LOADING_STEPS.length - 1;
+
+          return (
+            <div key={s.status} className="flex gap-4">
+              {/* Left column: circle + connector line */}
+              <div className="flex flex-col items-center">
+                {/* Circle */}
+                <div className="relative flex items-center justify-center w-8 h-8 shrink-0">
+                  {isDone && (
+                    <div className="w-8 h-8 rounded-full bg-[#0F0E0C] flex items-center justify-center">
+                      <svg width="12" height="9" viewBox="0 0 12 9" fill="none" aria-hidden>
+                        <path d="M1 4L4.5 7.5L11 1" stroke="#F7F4EE" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  )}
+                  {isActive && (
+                    <>
+                      <div className="absolute w-8 h-8 rounded-full border-2 border-[#E8431A] animate-ping opacity-30 motion-reduce:hidden" />
+                      <div className="w-8 h-8 rounded-full border-2 border-[#E8431A] flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#E8431A]" />
+                      </div>
+                    </>
+                  )}
+                  {isPending && (
+                    <div className="w-8 h-8 rounded-full border border-[#DDD9D0]" />
+                  )}
+                </div>
+                {/* Connector line */}
+                {!isLast && (
+                  <div className={`w-px flex-1 my-1 transition-colors duration-500 ${isDone ? 'bg-[#0F0E0C]' : 'bg-[#DDD9D0]'}`} />
+                )}
+              </div>
+
+              {/* Right column: text */}
+              <div className={`pb-8 pt-1 min-w-0 ${isLast ? 'pb-0' : ''}`}>
+                <p className={`text-sm font-semibold leading-snug transition-colors duration-300 ${
+                  isActive ? 'text-[#E8431A]' : isDone ? 'text-[#0F0E0C]' : 'text-[#C8C4BC]'
+                }`}>
+                  {s.heading}
+                </p>
+                {(isActive || isDone) && s.subtitle && (
+                  <p className="mt-1 text-xs text-[#8C8880] leading-relaxed">{s.subtitle}</p>
+                )}
+                {isActive && s.hint && (
+                  <p className="mt-1.5 text-xs text-[#C8C4BC]">{s.hint}</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-8 w-full h-[3px] bg-[#EEEAE2] rounded-full overflow-hidden">
         <div
-          key={i}
-          className={`brief-line-skeleton h-2.5 rounded-sm bg-gradient-to-r from-[#E8431A]/22 via-[#E8431A]/38 to-[#E8431A]/26 ${widthClass} animate-briefLineWave motion-reduce:animate-none motion-reduce:opacity-[0.45]`}
-          style={{
-            animationDelay: `${i * 0.28}s`,
-          }}
-        />
-      ))}
+          className="h-full bg-[#E8431A] rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+          style={{ width: `${progress}%` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-briefShimmer motion-reduce:hidden" />
+        </div>
+      </div>
+      <p className="mt-1.5 text-[11px] text-[#C8C4BC] tabular-nums">{progress}%</p>
     </div>
   );
 }
@@ -258,7 +354,7 @@ export default function TaskBriefPage() {
       : [];
 
   return (
-    <main className="min-h-screen bg-[#F7F4EE]">
+    <main className="min-h-screen bg-[#F7F4EE] flex flex-col">
       <nav className="sticky top-0 z-10 bg-[#F7F4EE]/90 backdrop-blur border-b border-[#DDD9D0] px-6 py-4 flex items-center justify-between">
         <Link href="/" className="font-serif text-lg text-[#0F0E0C] tracking-tight">
           Lumni<span className="text-[#E8431A]">.</span>
@@ -271,45 +367,21 @@ export default function TaskBriefPage() {
         </button>
       </nav>
 
-      <section className="max-w-3xl mx-auto px-6 py-12">
-        <p className="text-xs font-semibold tracking-widest uppercase text-[#E8431A]">Task</p>
-        <h1 className="mt-3 font-serif text-4xl font-normal tracking-tight text-[#0F0E0C] leading-tight">
-          Brief Generation
-        </h1>
-        {/* taskId used internally for polling, not shown to user */}
+      {/* ── Loading ── */}
+      {!isCompleted && !isFailed && (
+        <div className="flex-1 flex items-center justify-center">
+          <BriefLoadingScreen
+            status={status}
+            progress={progress}
+            isInitialLoading={isInitialLoading}
+          />
+        </div>
+      )}
 
-        {!isCompleted && !isFailed && (
-          <div
-            className="mt-8 bg-white border border-[#DDD9D0] rounded-sm p-6 shadow-sm"
-            role="status"
-            aria-live="polite"
-            aria-busy={isPolling}
-          >
-            <div className="flex items-start justify-between gap-3 mb-1">
-              <p className="text-sm text-[#3A3832] leading-snug flex-1 min-w-0">
-                {STATUS_LABELS[status]}
-              </p>
-              <p className="text-sm font-semibold text-[#0F0E0C] tabular-nums shrink-0">
-                {progress}%
-              </p>
-            </div>
-
-            <p className="text-[11px] text-[#8C8880] mb-1">
-              Drafting your briefs line by line…
-            </p>
-
-            <BriefLoadingLineSkeleton />
-
-            <p className="mt-4 text-xs text-[#8C8880]">
-              {isInitialLoading
-                ? 'Connecting to your generation task…'
-                : 'Generation usually takes 10–60 seconds.'}
-            </p>
-          </div>
-        )}
-
-        {isFailed && (
-          <div className="mt-8 bg-[#FFF0EC] border border-[#E8431A]/20 rounded-sm p-5">
+      {/* ── Error ── */}
+      {isFailed && (
+        <section className="max-w-3xl mx-auto px-6 py-12 w-full">
+          <div className="bg-[#FFF0EC] border border-[#E8431A]/20 rounded-sm p-5">
             <p className="text-sm font-semibold text-[#A93417] mb-2">Generation failed</p>
             <p className="text-sm text-[#6D4A42]">
               {errorMessage ?? 'Something went wrong while generating briefs.'}
@@ -321,17 +393,21 @@ export default function TaskBriefPage() {
               Retry
             </button>
           </div>
-        )}
+        </section>
+      )}
 
-        {isCompleted && (
+      {/* ── Results ── */}
+      {isCompleted && (
+        <section className="max-w-3xl mx-auto px-6 py-12 w-full">
+          <p className="text-xs font-semibold tracking-widest uppercase text-[#E8431A]">Done</p>
+          <h1 className="mt-3 font-serif text-4xl font-normal tracking-tight text-[#0F0E0C] leading-tight">
+            We created these briefs just for you.
+          </h1>
+          <p className="mt-2 text-sm text-[#8C8880]">
+            Choose a direction or write your own below.
+          </p>
+
           <div className="mt-8">
-            <p className="text-xs font-semibold tracking-widest uppercase text-[#E8431A] mb-4">
-              Generated Briefs
-            </p>
-            <p className="text-sm text-[#8C8880] mb-6">
-              Choose one of the AI-generated briefs or write your own below.
-            </p>
-
             {briefs.length > 0 ? (
               <div className="space-y-4">
                 {briefs.map((brief, index) => {
@@ -344,7 +420,6 @@ export default function TaskBriefPage() {
                       key={`${typeKey}-${index}`}
                       className="bg-white border border-[#DDD9D0] rounded-sm transition-all"
                     >
-                      {/* Collapsed: type + highlight + actions */}
                       <div className="p-6">
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0 flex-1">
@@ -354,7 +429,7 @@ export default function TaskBriefPage() {
                               </p>
                               {brief.duration && (
                                 <span className="text-[10px] font-semibold tracking-wide uppercase bg-[#EEEAE2] text-[#8C8880] px-2 py-0.5 rounded-sm">
-                                  {brief.duration}
+                                  {normalizeDuration(brief.duration)}
                                 </span>
                               )}
                             </div>
@@ -387,7 +462,6 @@ export default function TaskBriefPage() {
                         </div>
                       </div>
 
-                      {/* Expanded: full details */}
                       {isExpanded && (
                         <div className="border-t border-[#EEEAE2] px-6 pb-6 pt-5 space-y-4">
                           {brief.hook && (
@@ -474,7 +548,6 @@ export default function TaskBriefPage() {
                               <p className="text-sm text-[#3A3832]">{brief.cta}</p>
                             </div>
                           )}
-
                         </div>
                       )}
                     </article>
@@ -529,12 +602,35 @@ export default function TaskBriefPage() {
               </div>
             )}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </main>
   );
 }
 
+
+function normalizeDuration(raw: string): string {
+  const parseSeconds = (s: string): number | null => {
+    const cleaned = s.trim().replace(/\s*sec(onds?)?\s*$/i, '').trim();
+    if (cleaned.includes(':')) {
+      const [min, sec] = cleaned.split(':').map(Number);
+      if (!isNaN(min) && !isNaN(sec)) return min * 60 + sec;
+    }
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? null : n;
+  };
+
+  const parts = raw.split(/\s*[–\-]\s*/);
+  if (parts.length === 2) {
+    const a = parseSeconds(parts[0]);
+    const b = parseSeconds(parts[1]);
+    if (a !== null && b !== null) return `${Math.round(a)}–${Math.round(b)} sec`;
+  } else if (parts.length === 1) {
+    const a = parseSeconds(parts[0]);
+    if (a !== null) return `${Math.round(a)} sec`;
+  }
+  return raw;
+}
 
 function BriefExtras({ brief }: { brief: BriefCard }) {
   const extras: { label: string; value: string | null | undefined }[] = [];
