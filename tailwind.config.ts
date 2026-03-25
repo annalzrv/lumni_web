@@ -5,7 +5,24 @@ const config: Config = {
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
   ],
-  theme: { extend: {} },
+  theme: {
+    extend: {
+      keyframes: {
+        briefShimmer: {
+          '0%': { transform: 'translateX(-120%)' },
+          '100%': { transform: 'translateX(120%)' },
+        },
+        briefDot: {
+          '0%, 100%': { transform: 'translateY(0)', opacity: '0.35' },
+          '50%': { transform: 'translateY(-5px)', opacity: '1' },
+        },
+      },
+      animation: {
+        briefShimmer: 'briefShimmer 2.2s ease-in-out infinite',
+        briefDot: 'briefDot 1.05s ease-in-out infinite',
+      },
+    },
+  },
   plugins: [],
 };
 

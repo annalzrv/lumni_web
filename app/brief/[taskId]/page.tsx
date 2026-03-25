@@ -250,25 +250,60 @@ export default function TaskBriefPage() {
         {/* taskId used internally for polling, not shown to user */}
 
         {!isCompleted && !isFailed && (
-          <div className="mt-8 bg-white border border-[#DDD9D0] rounded-sm p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-[#3A3832]">{STATUS_LABELS[status]}</p>
-              <p className="text-sm font-semibold text-[#0F0E0C]">{progress}%</p>
+          <div
+            className="mt-8 bg-white border border-[#DDD9D0] rounded-sm p-6 shadow-sm"
+            role="status"
+            aria-live="polite"
+            aria-busy={isPolling}
+          >
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <p className="text-sm text-[#3A3832] leading-snug flex-1 min-w-0">
+                {STATUS_LABELS[status]}
+              </p>
+              <span className="flex shrink-0 gap-1 pt-0.5" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="h-2 w-2 rounded-full bg-[#E8431A] animate-briefDot"
+                    style={{ animationDelay: `${i * 0.16}s` }}
+                  />
+                ))}
+              </span>
+              <p className="text-sm font-semibold text-[#0F0E0C] tabular-nums shrink-0">
+                {progress}%
+              </p>
             </div>
-            <div className="w-full h-2 bg-[#EEEAE2] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#E8431A] transition-all duration-700 ease-out"
-                style={{ width: `${progress}%` }}
-              />
+
+            <div className="relative w-full h-2.5 bg-[#EEEAE2] rounded-full overflow-hidden">
+              {progress === 0 && isPolling ? (
+                <div
+                  className="absolute inset-y-0 left-0 w-[42%] rounded-full bg-gradient-to-r from-[#E8431A] via-[#FF7B52] to-[#E8431A] shadow-[0_0_14px_rgba(232,67,26,0.45)] animate-briefShimmer"
+                  aria-hidden
+                />
+              ) : (
+                <>
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#E8431A] via-[#F05A33] to-[#E8431A] transition-all duration-700 ease-out shadow-[0_0_12px_rgba(232,67,26,0.25)]"
+                    style={{ width: `${progress}%` }}
+                  />
+                  {isPolling && progress > 0 && progress < 100 && (
+                    <div
+                      className="pointer-events-none absolute inset-0 overflow-hidden rounded-full"
+                      aria-hidden
+                    >
+                      <div className="absolute top-0 bottom-0 w-[30%] bg-gradient-to-r from-transparent via-white/45 to-transparent animate-briefShimmer" />
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-            <p className="mt-3 text-xs text-[#8C8880]">
-              Generation usually takes 10–60 seconds.
+
+            <p className="mt-4 text-xs text-[#8C8880]">
+              {isInitialLoading
+                ? 'Connecting to your generation task…'
+                : 'Generation usually takes 10–60 seconds.'}
             </p>
           </div>
-        )}
-
-        {isInitialLoading && (
-          <p className="mt-6 text-sm text-[#8C8880]">Loading task status...</p>
         )}
 
         {isFailed && (
