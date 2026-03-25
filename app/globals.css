@@ -19,3 +19,10 @@ body {
 .font-serif {
   font-family: 'DM Serif Display', Georgia, serif;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .brief-line-skeleton {
+    animation: none !important;
+    opacity: 0.45;
+  }
+}

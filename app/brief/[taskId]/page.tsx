@@ -91,6 +91,33 @@ function getBriefLabel(brief: BriefCard, index: number): string {
   return BRIEF_TYPE_LABELS[key] ?? key;
 }
 
+/** Skeleton “paragraph” lines with staggered opacity wave (line-by-line feel). */
+const BRIEF_LOADING_LINE_WIDTHS = [
+  'w-full',
+  'w-[96%]',
+  'w-full',
+  'w-[88%]',
+  'w-full',
+  'w-[72%]',
+  'w-[44%]',
+] as const;
+
+function BriefLoadingLineSkeleton() {
+  return (
+    <div className="mt-5 space-y-3" aria-hidden>
+      {BRIEF_LOADING_LINE_WIDTHS.map((widthClass, i) => (
+        <div
+          key={i}
+          className={`brief-line-skeleton h-2.5 rounded-sm bg-gradient-to-r from-[#E8431A]/22 via-[#E8431A]/38 to-[#E8431A]/26 ${widthClass} animate-briefLineWave motion-reduce:animate-none motion-reduce:opacity-[0.45]`}
+          style={{
+            animationDelay: `${i * 0.28}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function TaskBriefPage() {
   const router = useRouter();
   const { taskId } = useParams<{ taskId: string }>();
@@ -256,47 +283,20 @@ export default function TaskBriefPage() {
             aria-live="polite"
             aria-busy={isPolling}
           >
-            <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-start justify-between gap-3 mb-1">
               <p className="text-sm text-[#3A3832] leading-snug flex-1 min-w-0">
                 {STATUS_LABELS[status]}
               </p>
-              <span className="flex shrink-0 gap-1 pt-0.5" aria-hidden>
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="h-2 w-2 rounded-full bg-[#E8431A] animate-briefDot"
-                    style={{ animationDelay: `${i * 0.16}s` }}
-                  />
-                ))}
-              </span>
               <p className="text-sm font-semibold text-[#0F0E0C] tabular-nums shrink-0">
                 {progress}%
               </p>
             </div>
 
-            <div className="relative w-full h-2.5 bg-[#EEEAE2] rounded-full overflow-hidden">
-              {progress === 0 && isPolling ? (
-                <div
-                  className="absolute inset-y-0 left-0 w-[42%] rounded-full bg-gradient-to-r from-[#E8431A] via-[#FF7B52] to-[#E8431A] shadow-[0_0_14px_rgba(232,67,26,0.45)] animate-briefShimmer"
-                  aria-hidden
-                />
-              ) : (
-                <>
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#E8431A] via-[#F05A33] to-[#E8431A] transition-all duration-700 ease-out shadow-[0_0_12px_rgba(232,67,26,0.25)]"
-                    style={{ width: `${progress}%` }}
-                  />
-                  {isPolling && progress > 0 && progress < 100 && (
-                    <div
-                      className="pointer-events-none absolute inset-0 overflow-hidden rounded-full"
-                      aria-hidden
-                    >
-                      <div className="absolute top-0 bottom-0 w-[30%] bg-gradient-to-r from-transparent via-white/45 to-transparent animate-briefShimmer" />
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            <p className="text-[11px] text-[#8C8880] mb-1">
+              Drafting your briefs line by line…
+            </p>
+
+            <BriefLoadingLineSkeleton />
 
             <p className="mt-4 text-xs text-[#8C8880]">
               {isInitialLoading
