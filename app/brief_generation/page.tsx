@@ -170,7 +170,7 @@ export default function BriefGenerationPage() {
           requestBody,
           responseBody: errorText,
         });
-        throw new Error(`Server error: ${res.status}`);
+        throw new Error(`Server error ${res.status}: ${errorText.slice(0, 200)}`);
       }
 
       const { task_id } = await res.json();
@@ -182,7 +182,13 @@ export default function BriefGenerationPage() {
       router.push(`/brief/${task_id}`);
     } catch (err) {
       console.error('Generate request crashed', err);
-      setError('Our AI agents are currently resting. Please try again later.');
+      const technical = err instanceof Error ? err.message : String(err);
+      const isDev = process.env.NODE_ENV === 'development';
+      setError(
+        isDev
+          ? `Could not reach the API (${technical}). Use http://localhost:3000 (not the Network IP) if you see CORS/Failed to fetch; ensure the backend runs with a valid .env (Supabase).`
+          : 'Our AI agents are currently resting. Please try again later.'
+      );
     } finally {
       if (!redirected) {
         setLoading(false);
